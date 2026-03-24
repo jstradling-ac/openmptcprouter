@@ -83,7 +83,7 @@ elif [ "$OMR_TARGET" = "x86" ]; then
 	OMR_REAL_TARGET="i386_pentium4"
 elif [ "$OMR_TARGET" = "x86_64" ]; then
 	OMR_REAL_TARGET="x86_64"
-elif [ "$OMR_TARGET" = "r2s" ] || [ "$OMR_TARGET" = "r4s" ] || [ "$OMR_TARGET" = "r5s" ] || [ "$OMR_TARGET" = "armsr64" ]; then
+elif [ "$OMR_TARGET" = "r2s" ] || [ "$OMR_TARGET" = "r4s" ] || [ "$OMR_TARGET" = "r5s" ] || [ "$OMR_TARGET" = "r5c" ] || [ "$OMR_TARGET" = "r6s" ] || [ "$OMR_TARGET" = "armsr64" ]; then
 	OMR_REAL_TARGET="aarch64_generic"
 elif [ "$OMR_TARGET" = "ubnt-erx" ]; then
 	OMR_REAL_TARGET="mipsel_24kc"
@@ -678,6 +678,11 @@ if [ "$OMR_KERNEL" = "5.4" ]; then
 		NOT_SUPPORTED="1"
 		exit 1
 	fi
+	if [ "$OMR_TARGET" = "r6s" ] || [ "$OMR_TARGET" = "r5c" ]; then
+		echo "Sorry but kernel 5.4 is not supported on your arch, use kernel 6.6 or later"
+		NOT_SUPPORTED="1"
+		exit 1
+	fi
 	if ([ "$OMR_TARGET" = "bpi-r3" ] || [ "$OMR_TARGET" = "bpi-r4" ] || [ "$OMR_TARGET" = "bpi-r4-poe" ]); then
 		echo "Sorry but kernel 5.4 is not supported on your arch"
 		NOT_SUPPORTED="1"
@@ -699,7 +704,7 @@ if [ "$OMR_KERNEL" = "6.1" ]; then
 	find target/linux/x86 -type f -name Makefile -exec sed -i 's%KERNEL_PATCHVER:=5.10%KERNEL_PATCHVER:=6.1%g' {} \;
 	find target/linux/x86 -type f -name Makefile -exec sed -i 's%KERNEL_PATCHVER:=5.15%KERNEL_PATCHVER:=6.1%g' {} \;
 	echo "Done"
-	echo "Set to kernel 6.1 for rockchip arch (R2S/R4S)"
+	echo "Set to kernel 6.1 for rockchip arch (R2S/R4S/R5S)"
 	find target/linux/rockchip -type f -name Makefile -exec sed -i 's%KERNEL_PATCHVER:=5.15%KERNEL_PATCHVER:=6.1%g' {} \;
 	echo "Done"
 	#echo "Set to kernel 6.1 for ipq807x"
@@ -758,6 +763,11 @@ if [ "$OMR_KERNEL" = "6.1" ]; then
 		echo "Sorry but kernel 6.1 is not supported on your arch yet"
 		NOT_SUPPORTED="1"
 		#exit 1
+	fi
+	if [ "$OMR_TARGET" = "r6s" ] || [ "$OMR_TARGET" = "r5c" ]; then
+		echo "Sorry but kernel 6.1 is not supported on your arch, use kernel 6.6 or later"
+		NOT_SUPPORTED="1"
+		exit 1
 	fi
 fi
 if [ "$OMR_KERNEL" = "6.6" ]; then
