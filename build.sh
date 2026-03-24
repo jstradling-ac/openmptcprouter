@@ -1115,6 +1115,16 @@ if [ ! -f "../../../$OMR_TARGET_CONFIG" ] || [ "$NOT_SUPPORTED" = "1" ]; then
 fi
 [ "$ONLY_PREPARE" = "yes" ] && exit 0
 echo "Building $OMR_DIST for the target $OMR_TARGET with kernel ${OMR_KERNEL}"
+# Fix Python.h discovery for U-Boot pylibfdt build (needed by RK3588 and other boards using binman)
+# OpenWrt's u-boot.mk passes HOSTCFLAGS to U-Boot but doesn't include Python paths,
+# and setuptools doesn't inject them when CPPFLAGS is explicitly overridden.
+PYTHON3_INCLUDES=$(python3-config --includes 2>/dev/null)
+if [ -n "$PYTHON3_INCLUDES" ] && [ -f include/u-boot.mk ]; then
+	if ! grep -q "python3-config" include/u-boot.mk; then
+		sed -i 's|HOSTCFLAGS="\$(HOST_CFLAGS) \$(HOST_CPPFLAGS)|HOSTCFLAGS="$(HOST_CFLAGS) $(HOST_CPPFLAGS) '"${PYTHON3_INCLUDES}"'|' include/u-boot.mk
+		echo "Patched u-boot.mk with Python includes: $PYTHON3_INCLUDES"
+	fi
+fi
 make defconfig
 make IGNORE_ERRORS=m "$@"
 echo "Done"
