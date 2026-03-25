@@ -597,14 +597,6 @@ if grep -q "name '\*\.orig'" scripts/patch-kernel.sh 2>/dev/null; then
 	echo "Patched scripts/patch-kernel.sh to preserve .orig files"
 fi
 
-# Fix: mptcp-bpf-burst uses bpf_core_cast() which requires libbpf 1.4+,
-# but kernel 6.6 ships libbpf 1.3. The cast is a BPF verifier hint only —
-# ssk is already struct sock *, so removing it is safe.
-# Only needed for kernel 6.6/6.10 (libbpf 1.3); kernel 6.12+ has libbpf 1.4+.
-if ([ "$OMR_KERNEL" = "6.6" ] || [ "$OMR_KERNEL" = "6.10" ]) && [ -f ../feeds/openmptcprouter/mptcp-bpf-burst/src/mptcp_bpf_burst.c ]; then
-	sed -i 's/ssk = bpf_core_cast(ssk, struct sock);/\/* bpf_core_cast requires libbpf 1.4+, ssk is already struct sock *\//' \
-		../feeds/openmptcprouter/mptcp-bpf-burst/src/mptcp_bpf_burst.c
-fi
 
 #echo "Patch protobuf wrong hash"
 #patch -N -R -p1 -s < ../../../patches/protobuf_hash.patch
@@ -1126,6 +1118,16 @@ cp .config.keep .config
 scripts/feeds install kmod-macremapper
 echo "Done"
 
+# Fix: mptcp-bpf-burst uses bpf_core_cast() which requires libbpf 1.4+,
+# but kernel 6.6 ships libbpf 1.3. The cast is a BPF verifier hint only —
+# ssk is already struct sock *, so removing it is safe.
+# Only needed for kernel 6.6/6.10 (libbpf 1.3); kernel 6.12+ has libbpf 1.4+.
+if ([ "$OMR_KERNEL" = "6.6" ] || [ "$OMR_KERNEL" = "6.10" ]) && [ -f feeds/openmptcprouter/mptcp-bpf-burst/src/mptcp_bpf_burst.c ]; then
+	sed -i 's/ssk = bpf_core_cast(ssk, struct sock);/\/* bpf_core_cast requires libbpf 1.4+, ssk is already struct sock *\//' \
+		feeds/openmptcprouter/mptcp-bpf-burst/src/mptcp_bpf_burst.c
+	echo "Patched mptcp-bpf-burst to remove bpf_core_cast (libbpf 1.3 compat)"
+fi
+
 if [ ! -f "../../../$OMR_TARGET_CONFIG" ] || [ "$NOT_SUPPORTED" = "1" ]; then
 	echo "Target $OMR_TARGET not found ! You have to configure and compile your kernel manually."
 	exit 1
@@ -1137,7 +1139,7 @@ echo "Building $OMR_DIST for the target $OMR_TARGET with kernel ${OMR_KERNEL}"
 # and setuptools doesn't inject them when CPPFLAGS is explicitly overridden.
 PYTHON3_INCLUDES=$(python3-config --includes 2>/dev/null)
 if [ -n "$PYTHON3_INCLUDES" ] && [ -f include/u-boot.mk ]; then
-	if ! grep -q "python3-config" include/u-boot.mk; then
+	if ! grep -q "usr/include/python" include/u-boot.mk; then
 		sed -i 's|HOSTCFLAGS="\$(HOST_CFLAGS) \$(HOST_CPPFLAGS)|HOSTCFLAGS="$(HOST_CFLAGS) $(HOST_CPPFLAGS) '"${PYTHON3_INCLUDES}"'|' include/u-boot.mk
 		echo "Patched u-boot.mk with Python includes: $PYTHON3_INCLUDES"
 	fi
