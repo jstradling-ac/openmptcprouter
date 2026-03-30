@@ -1,0 +1,21 @@
+--- a/openmptcprouter/files/etc/uci-defaults/1920-omr-network
++++ b/openmptcprouter/files/etc/uci-defaults/1920-omr-network
+@@ -106,6 +106,8 @@
+ lanif="eth0"
+ if [ "$(cat /etc/board.json | jsonfilter -q -e '@.model.id' | tr -d '\n')" = "friendlyarm,nanopi-r5c" ]; then
+ 	lanif="eth0"
++elif [ "$(cat /etc/board.json | jsonfilter -q -e '@.model.id' | tr -d '\n')" = "friendlyarm,nanopi-r6s" ]; then
++	lanif="eth0"
+ elif [ "$(cat /etc/board.json | jsonfilter -q -e '@.model.id' | tr -d '\n')" = "bananapi,bpi-r4" ] || [ "$(cat /etc/board.json | jsonfilter -q -e '@.model.id' | tr -d '\n')" = "bananapi,bpi-r4-poe" ]; then
+ 	lanif="wan"
+ elif [ "$(grep rockchip /etc/os-release)" != "" ]; then
+@@ -271,6 +273,9 @@
+ 		_setup_wan_interface wan2 eth1 on macvlan
+ 		_setup_macvlan wan1
+ 		_setup_macvlan wan2
++	elif [ "$(cat /etc/board.json | jsonfilter -q -e '@.model.id' | tr -d '\n')" = "friendlyarm,nanopi-r6s" ]; then
++		_setup_wan_interface wan1 eth1 master
++		_setup_wan_interface wan2 eth2 on
+ 	elif [ "$(grep rockchip /etc/os-release)" != "" ]; then
+ 		_setup_wan_interface wan1 eth0 master macvlan
+ 		_setup_wan_interface wan2 eth0 on macvlan

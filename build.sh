@@ -1128,6 +1128,32 @@ if ([ "$OMR_KERNEL" = "6.6" ] || [ "$OMR_KERNEL" = "6.10" ]) && [ -f feeds/openm
 	echo "Patched mptcp-bpf-burst to remove bpf_core_cast (libbpf 1.3 compat)"
 fi
 
+# Fix: rust feed's Makefile may set download-ci-llvm=true, but Rust CI builds
+# get deleted after a few months, causing 404 errors for older versions.
+# Disable if the rust source tarball download page suggests an old version.
+if [ -f feeds/openmptcprouter/rust/Makefile ] && grep -q "download-ci-llvm=true" feeds/openmptcprouter/rust/Makefile; then
+	RUST_VER=$(sed -n 's/^PKG_VERSION:=\(.*\)/\1/p' feeds/openmptcprouter/rust/Makefile)
+	LATEST_STABLE=$(curl -sf https://static.rust-lang.org/dist/channel-rust-stable.toml 2>/dev/null | sed -n 's/^version = "\([0-9.]*\).*/\1/p' | head -1)
+	if [ -n "$RUST_VER" ] && [ -n "$LATEST_STABLE" ]; then
+		FEED_MINOR=$(echo "$RUST_VER" | cut -d. -f2)
+		STABLE_MINOR=$(echo "$LATEST_STABLE" | cut -d. -f2)
+		if [ "$((STABLE_MINOR - FEED_MINOR))" -gt 3 ]; then
+			sed -i "s/download-ci-llvm=true/download-ci-llvm=false/" feeds/openmptcprouter/rust/Makefile
+			echo "Patched rust to build LLVM from source (feed has $RUST_VER, stable is $LATEST_STABLE, CI builds likely expired)"
+		fi
+	fi
+fi
+
+# Add NanoPi R6S network port mapping to OpenMPTCProuter network config.
+# R6S has: eth0=1G GMAC (LAN), eth1=2.5G RTL8125B (WAN), eth2=2.5G RTL8125B (WAN2).
+# The generic rockchip fallback assumes R4S layout (eth0=WAN, eth1=LAN) which is wrong.
+if [ "$OMR_TARGET" = "r6s" ] && [ -f feeds/openmptcprouter/openmptcprouter/files/etc/uci-defaults/1920-omr-network ]; then
+	if ! grep -q "nanopi-r6s" feeds/openmptcprouter/openmptcprouter/files/etc/uci-defaults/1920-omr-network; then
+		patch -N -p1 -d feeds/openmptcprouter < ../../../patches/r6s-network-mapping.patch && \
+			echo "Patched 1920-omr-network with R6S port mapping (eth0=LAN, eth1=wan1, eth2=wan2)"
+	fi
+fi
+
 if [ ! -f "../../../$OMR_TARGET_CONFIG" ] || [ "$NOT_SUPPORTED" = "1" ]; then
 	echo "Target $OMR_TARGET not found ! You have to configure and compile your kernel manually."
 	exit 1
