@@ -1118,16 +1118,6 @@ cp .config.keep .config
 scripts/feeds install kmod-macremapper
 echo "Done"
 
-# Fix: mptcp-bpf-burst uses bpf_core_cast() which requires libbpf 1.4+,
-# but kernel 6.6 ships libbpf 1.3. The cast is a BPF verifier hint only —
-# ssk is already struct sock *, so removing it is safe.
-# Only needed for kernel 6.6/6.10 (libbpf 1.3); kernel 6.12+ has libbpf 1.4+.
-if ([ "$OMR_KERNEL" = "6.6" ] || [ "$OMR_KERNEL" = "6.10" ]) && [ -f feeds/openmptcprouter/mptcp-bpf-burst/src/mptcp_bpf_burst.c ]; then
-	sed -i 's/ssk = bpf_core_cast(ssk, struct sock);/\/* bpf_core_cast requires libbpf 1.4+, ssk is already struct sock *\//' \
-		feeds/openmptcprouter/mptcp-bpf-burst/src/mptcp_bpf_burst.c
-	echo "Patched mptcp-bpf-burst to remove bpf_core_cast (libbpf 1.3 compat)"
-fi
-
 # Fix: rust feed's Makefile may set download-ci-llvm=true, but Rust CI builds
 # get deleted after a few months, causing 404 errors for older versions.
 # Disable if the rust source tarball download page suggests an old version.
